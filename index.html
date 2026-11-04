@@ -1,0 +1,735 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>커피숍 키오스크 연습</title>
+<style>
+:root{
+  --bg:#2b211b; --brand:#e8a317; --brand-d:#b67b00; --brown:#4a2e1f; --cream:#fff8ea;
+  --ink:#1f1a17; --muted:#6f655d; --line:#e6dccb; --red:#d93025; --blue:#1a73e8; --green:#188038;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);overflow:hidden;
+  font-family:"Malgun Gothic","맑은 고딕","Apple SD Gothic Neo",sans-serif;color:var(--ink);touch-action:manipulation}
+button{font-family:inherit;cursor:pointer;border:none;color:inherit}
+#stage{position:absolute;left:0;top:0;width:1080px;height:1500px;background:var(--cream);overflow:hidden;
+  transform-origin:0 0;border-radius:28px;box-shadow:0 0 0 14px #111,0 20px 60px rgba(0,0,0,.6)}
+.screen{position:absolute;inset:0;display:none;flex-direction:column}
+.screen.on{display:flex}
+
+/* 상단 */
+.top{height:110px;background:var(--brown);color:#fff;display:flex;align-items:center;padding:0 24px;gap:16px;flex:none}
+.logo{font-size:40px;font-weight:800;letter-spacing:-1px;display:flex;align-items:center;gap:12px;white-space:nowrap}
+.logo .dot{width:46px;height:46px;border-radius:50%;background:var(--brand);display:inline-flex;align-items:center;justify-content:center;font-size:28px}
+.top .sp{flex:1}
+.tag{background:var(--brand);color:var(--brown);font-size:30px;font-weight:800;padding:10px 18px;border-radius:40px;white-space:nowrap}
+.timer{font-size:28px;background:rgba(255,255,255,.15);padding:10px 16px;border-radius:14px;display:none;white-space:nowrap}
+.timer.on{display:block}
+.timer.warn{background:var(--red)}
+.homeBtn{background:#fff;color:var(--brown);font-size:22px;font-weight:800;padding:6px 14px 8px;border-radius:16px;white-space:nowrap;display:flex;flex-direction:column;align-items:center;gap:0;line-height:1.1}
+.homeBtn svg{width:52px;height:52px}
+
+.mission{flex:none;background:#fff1c7;border-bottom:3px solid var(--brand);padding:14px 24px;font-size:31px;font-weight:700;display:none;align-items:center;gap:14px}
+.mission.on{display:flex}
+.mission .mt{flex:1;line-height:1.3}
+.mission .ml{background:var(--brown);color:#fff;font-size:24px;padding:6px 12px;border-radius:10px;flex:none}
+.hintline{flex:none;background:#e8f1ff;color:#0b4fb3;font-size:30px;font-weight:700;padding:12px 24px;display:none;line-height:1.3}
+.hintline.on{display:block}
+
+/* 시작 */
+#s-start{background:linear-gradient(180deg,#4a2e1f 0%,#6b4330 55%,#e8a317 100%);color:#fff;align-items:center;justify-content:center;text-align:center}
+#s-start .big{font-size:96px;font-weight:800;margin:0 0 10px}
+#s-start .sub{font-size:44px;opacity:.95;margin:0 0 60px}
+#s-start .cups{display:flex;gap:30px;margin-bottom:70px}
+#s-start .cups svg{width:200px;height:200px;filter:drop-shadow(0 10px 18px rgba(0,0,0,.35))}
+#startBtn{background:#fff;color:var(--brown);font-size:60px;font-weight:800;padding:44px 90px;border-radius:30px;box-shadow:0 12px 0 #c58a10}
+#startBtn:active{transform:translateY(6px);box-shadow:0 6px 0 #c58a10}
+.corner{position:absolute;top:24px;display:flex;gap:14px}
+.corner.l{left:24px}.corner.r{right:24px}
+.ghost{background:rgba(255,255,255,.18);color:#fff;font-size:30px;font-weight:700;padding:16px 24px;border-radius:16px}
+#startMission{margin:50px 40px 0;font-size:36px;background:rgba(0,0,0,.28);padding:20px 30px;border-radius:20px;display:none;line-height:1.4}
+
+/* 매장/포장 */
+.center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:50px;padding:30px;overflow-y:auto}
+.q{font-size:62px;font-weight:800;text-align:center;line-height:1.3}
+.two{display:flex;gap:40px}
+.bigCard{width:440px;height:520px;background:#fff;border:6px solid var(--line);border-radius:36px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;font-size:58px;font-weight:800;color:var(--brown)}
+.bigCard small{font-size:32px;color:var(--muted);font-weight:600}
+.bigCard svg{width:200px;height:200px}
+.bigCard:active{background:#fff3d6;border-color:var(--brand)}
+
+/* 카테고리 */
+.tabbar{flex:none;display:flex;background:#fff;border-bottom:4px solid var(--line)}
+.arr{width:70px;flex:none;background:#f3ebdd;font-size:56px;font-weight:800;color:var(--brown)}
+.tabs{flex:1;display:flex;overflow-x:auto;scrollbar-width:none;scroll-behavior:smooth}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:none;min-width:190px;padding:0 22px;height:110px;font-size:38px;font-weight:800;background:#fff;color:var(--muted);border-bottom:8px solid transparent;white-space:nowrap}
+.tab.on{color:var(--brown);border-bottom-color:var(--brand);background:#fff8e6}
+
+/* 메뉴판 */
+.grid{flex:1;overflow-y:auto;display:grid;grid-template-columns:repeat(3,1fr);gap:20px;padding:22px;align-content:start}
+.item{background:#fff;border:4px solid var(--line);border-radius:26px;padding:14px 10px 18px;display:flex;flex-direction:column;align-items:center;gap:4px;position:relative}
+.item:active{border-color:var(--brand);background:#fffaf0}
+.item svg{width:150px;height:150px}
+.item .nm{font-size:33px;font-weight:800;text-align:center;line-height:1.2;word-break:keep-all;min-height:80px;display:flex;align-items:center}
+.item .pr{font-size:31px;font-weight:700;color:var(--brand-d)}
+.badges{position:absolute;top:10px;left:10px;display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.badge{font-size:20px;font-weight:800;color:#fff;padding:3px 9px;border-radius:8px}
+.badge.h{background:var(--red)}.badge.i{background:var(--blue)}
+.ribbon{position:absolute;top:10px;right:10px;font-size:20px;font-weight:800;padding:3px 9px;border-radius:8px;background:var(--brown);color:#fff}
+.ribbon.new{background:#18a058}
+.more{grid-column:1/-1;text-align:center;font-size:26px;color:var(--muted);padding:6px}
+
+/* 장바구니 */
+.cart{flex:none;height:360px;background:#fff;border-top:6px solid var(--brown);display:flex}
+.cartList{flex:1;overflow-y:auto;padding:10px 18px}
+.cartEmpty{font-size:34px;color:var(--muted);text-align:center;margin-top:110px}
+.row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:2px dashed var(--line)}
+.row .rn{flex:1;font-size:31px;font-weight:800;line-height:1.2;min-width:0}
+.row .rn small{display:block;font-size:23px;color:var(--muted);font-weight:600;margin-top:2px}
+.qbtn{width:62px;height:62px;border-radius:50%;background:#efe6d6;font-size:44px;font-weight:800;color:var(--brown);line-height:1;flex:none}
+.row .qn{width:46px;text-align:center;font-size:34px;font-weight:800;flex:none}
+.row .rp{width:130px;text-align:right;font-size:29px;font-weight:700;flex:none}
+.del{width:58px;height:58px;border-radius:14px;background:#fde8e6;color:var(--red);font-size:34px;font-weight:800;flex:none}
+.cartSide{width:310px;background:#f7f0e3;padding:18px;display:flex;flex-direction:column;gap:12px;flex:none}
+.sum{font-size:28px;color:var(--muted);font-weight:700}
+.sum b{display:block;font-size:48px;color:var(--ink)}
+.payBtn{flex:1;background:var(--brand);color:var(--brown);font-size:46px;font-weight:800;border-radius:22px}
+.payBtn:disabled{background:#ddd;color:#999}
+.clearBtn{background:#fff;border:3px solid #ccc;color:var(--muted);font-size:28px;font-weight:700;padding:12px;border-radius:16px}
+
+/* 팝업 */
+.modal{position:absolute;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:20}
+.modal.on{display:flex}
+.box{width:940px;max-height:1420px;overflow-y:auto;background:#fff;border-radius:34px;padding:34px 38px 0;position:relative}
+.box h2{font-size:50px;margin:0 0 8px;text-align:center}
+.box .pad0{height:34px}
+.optHead{display:flex;align-items:center;gap:24px;justify-content:center}
+.optHead svg{width:150px;height:150px}
+.optHead .pp{font-size:42px;font-weight:800;color:var(--brand-d)}
+.og{margin-top:20px;padding-top:16px;border-top:2px solid #f1eadf}
+.og .ot{font-size:33px;font-weight:800;margin-bottom:12px;display:flex;align-items:center;gap:10px}
+.og .ot .num{background:var(--brown);color:#fff;width:46px;height:46px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:26px;flex:none}
+.ob{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px}
+.opt{min-height:100px;border-radius:20px;border:5px solid var(--line);background:#fff;font-size:33px;font-weight:800;color:var(--ink);padding:8px 6px;line-height:1.2;word-break:keep-all}
+.opt small{display:block;font-size:23px;color:var(--muted);margin-top:4px}
+.opt.on{border-color:var(--brown);background:#fff1c7}
+.opt.hot.on{border-color:var(--red);background:#fde8e6;color:var(--red)}
+.opt.ice.on{border-color:var(--blue);background:#e8f1ff;color:var(--blue)}
+.qty{display:flex;align-items:center;justify-content:center;gap:34px}
+.qty .qbtn{width:96px;height:96px;font-size:60px}
+.qty .qn{font-size:60px;font-weight:800;min-width:80px;text-align:center}
+.foot{display:flex;gap:20px;margin-top:26px;position:sticky;bottom:0;background:#fff;padding:18px 0 30px;z-index:3}
+.foot button{flex:1;height:120px;border-radius:24px;font-size:44px;font-weight:800}
+.no{background:#eee;color:#555}
+.yes{background:var(--brand);color:var(--brown)}
+.chk{font-size:32px;line-height:1.5;border-top:3px solid var(--line);border-bottom:3px solid var(--line);padding:14px 4px;margin:18px 0}
+.chk>div{display:flex;justify-content:space-between;gap:14px;padding:4px 0}
+.chk small{display:block;font-size:24px;color:var(--muted)}
+.chk .tot{font-weight:800;font-size:40px;border-top:2px dashed var(--line);margin-top:8px;padding-top:8px}
+.msg{font-size:40px;text-align:center;line-height:1.5;margin:20px 0}
+
+/* 적립·결제 */
+.pad{display:grid;grid-template-columns:repeat(3,200px);gap:18px}
+.pad button{height:120px;border-radius:20px;background:#fff;border:4px solid var(--line);font-size:54px;font-weight:800}
+.pad button:active{background:#fff1c7}
+.phone{font-size:66px;font-weight:800;letter-spacing:4px;background:#fff;border:5px solid var(--brown);border-radius:22px;padding:20px 40px;min-width:660px;text-align:center}
+.rowBtns{display:flex;gap:30px}
+.mid{height:130px;padding:0 50px;border-radius:26px;font-size:46px;font-weight:800}
+.methods{display:flex;flex-direction:column;gap:30px;width:860px}
+.method{height:200px;background:#fff;border:6px solid var(--line);border-radius:30px;display:flex;align-items:center;gap:40px;padding:0 50px;font-size:56px;font-weight:800;color:var(--brown);text-align:left}
+.method small{display:block;font-size:30px;color:var(--muted);font-weight:600}
+.method svg{width:120px;height:120px;flex:none}
+.method:active{border-color:var(--brand);background:#fff8e6}
+.payTotal{font-size:44px;font-weight:700}
+.payTotal b{color:var(--red);font-size:60px}
+
+.reader{width:560px;height:330px;position:relative}
+.machine{position:absolute;left:30px;right:30px;bottom:0;height:150px;background:#3a3a3a;border-radius:24px}
+.slot{position:absolute;left:110px;right:110px;top:26px;height:20px;background:#111;border-radius:10px}
+.card{position:absolute;left:140px;width:280px;height:180px;border-radius:18px;background:linear-gradient(135deg,#1a73e8,#0b3d91);top:0;transition:top .8s}
+.card::after{content:"";position:absolute;left:30px;top:50px;width:60px;height:44px;border-radius:8px;background:#f4c542}
+.card.in{top:170px}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(40px)}}
+.card.guide{animation:bob 1.4s infinite}
+.spin{width:110px;height:110px;border:14px solid #eee;border-top-color:var(--brand);border-radius:50%;animation:sp 1s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+.receipt{background:#fff;width:760px;border-radius:20px;padding:34px;box-shadow:0 10px 30px rgba(0,0,0,.12);text-align:center}
+.receipt .ono{color:var(--red);font-size:150px;font-weight:800;line-height:1}
+.receipt .lab{font-size:40px;font-weight:700}
+.result{width:900px;border-radius:26px;padding:26px 34px;font-size:32px;line-height:1.5}
+.result.ok{background:#e6f4ea;border:4px solid var(--green)}
+.result.ng{background:#fde8e6;border:4px solid var(--red)}
+.result h3{margin:0 0 6px;font-size:46px}
+
+@keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(255,80,0,0),0 0 0 6px #ff5a00}50%{box-shadow:0 0 0 18px rgba(255,90,0,.35),0 0 0 6px #ff5a00}}
+.hint{animation:glow 1.1s infinite !important;position:relative;z-index:2}
+
+.list{display:flex;flex-direction:column;gap:16px;margin-top:20px}
+.list button{text-align:left;background:#fff8e6;border:4px solid var(--line);border-radius:22px;padding:20px 26px;font-size:34px;font-weight:700;line-height:1.35}
+.list button b{color:var(--brand-d)}
+.list button.on{border-color:var(--brown)}
+.lv{font-size:22px;padding:3px 10px;border-radius:8px;color:#fff;margin-left:8px;vertical-align:middle}
+.lv1{background:#18a058}.lv2{background:#e8a317}.lv3{background:#d93025}
+.set{display:flex;align-items:center;justify-content:space-between;font-size:36px;font-weight:700;margin:22px 0;gap:20px}
+.seg{display:flex;gap:10px}
+.seg button{font-size:30px;font-weight:800;padding:16px 22px;border-radius:16px;background:#eee;color:#555}
+.seg button.on{background:var(--brown);color:#fff}
+
+/* 휴대폰 세로 화면 (폭 720 기준) */
+body.m #stage{border-radius:0;box-shadow:none}
+body.m .top{padding:0 16px;gap:10px;height:100px}
+body.m .logo{font-size:32px;gap:8px}
+body.m .logo .dot{width:40px;height:40px;font-size:24px}
+body.m .homeBtn{font-size:22px;padding:4px 12px 6px}
+body.m .homeBtn svg{width:50px;height:50px}
+body.m .tag{font-size:26px;padding:8px 12px}
+body.m .timer{font-size:24px;padding:8px 10px}
+body.m .grid{grid-template-columns:repeat(2,1fr);gap:16px;padding:16px}
+body.m .item .nm{font-size:36px}
+body.m .item .pr{font-size:33px}
+body.m .tab{font-size:40px;min-width:180px}
+body.m .arr{width:60px}
+body.m .cart{height:360px;flex-direction:column}
+body.m .item svg{width:120px;height:120px}
+body.m .item .nm{min-height:0}
+body.m .mission{font-size:28px;padding:10px 16px}
+body.m .cartSide{width:auto;flex-direction:row;align-items:center;height:130px;padding:12px 16px}
+body.m .sum{width:210px;font-size:26px}
+body.m .sum b{font-size:42px}
+body.m .clearBtn{padding:14px 12px;font-size:26px}
+body.m .payBtn{height:104px;font-size:44px}
+body.m .row .rn{font-size:30px}
+body.m .row .rp{width:112px;font-size:27px}
+body.m .box{width:690px;padding:28px 26px 0}
+body.m .ob{grid-template-columns:repeat(2,1fr)}
+body.m .opt{font-size:34px}
+body.m .bigCard{width:310px;height:440px;font-size:50px}
+body.m .bigCard svg{width:160px;height:160px}
+body.m .two{gap:24px}
+body.m .q{font-size:54px}
+body.m .methods{width:660px}
+body.m .method{gap:24px;padding:0 28px;font-size:46px;height:180px}
+body.m .phone{min-width:600px;font-size:58px}
+body.m .receipt{width:660px}
+body.m .result{width:660px}
+body.m .mid{padding:0 34px;font-size:42px}
+body.m #s-start .big{font-size:84px}
+body.m #s-start .sub{font-size:40px}
+body.m #s-start .cups svg{width:170px;height:170px}
+body.m #startBtn{font-size:56px;padding:40px 70px}
+body.m .reader{transform:scale(.9)}
+</style>
+</head>
+<body>
+<div id="stage">
+
+  <section class="screen on" id="s-start">
+    <div class="corner l"><button class="ghost" id="missionOpen">📝 연습 문제</button></div>
+    <div class="corner r"><button class="ghost" id="setOpen">⚙ 설정</button></div>
+    <div class="cups" id="startCups"></div>
+    <p class="big">다정 커피</p>
+    <p class="sub">화면을 눌러 주문을 시작하세요</p>
+    <button id="startBtn">👆 주문하기</button>
+    <p class="sub" id="startMission"></p>
+  </section>
+
+  <section class="screen" id="s-place">
+    <div class="top"><div class="logo"><span class="dot">☕</span>다정 커피</div><div class="sp"></div><div class="timer"></div><button class="homeBtn" data-home aria-label="처음으로"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.2 12 3.5l9 7.7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.5 9.8V20h4.8v-5.6h3.4V20h4.8V9.8" fill="currentColor"/></svg><span>처음으로</span></button></div>
+    <div class="mission"></div><div class="hintline"></div>
+    <div class="center">
+      <div class="q">어디에서 드시나요?</div>
+      <div class="two">
+        <button class="bigCard" data-place="here" id="placeHere"><span id="icHere"></span>매장에서<small>여기서 먹고 가요</small></button>
+        <button class="bigCard" data-place="togo" id="placeTogo"><span id="icTogo"></span>포장하기<small>가지고 가요</small></button>
+      </div>
+    </div>
+  </section>
+
+  <section class="screen" id="s-menu">
+    <div class="top"><div class="logo"><span class="dot">☕</span>다정 커피</div><span class="tag" id="placeTag">매장</span><div class="sp"></div><div class="timer"></div><button class="homeBtn" data-home aria-label="처음으로"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.2 12 3.5l9 7.7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.5 9.8V20h4.8v-5.6h3.4V20h4.8V9.8" fill="currentColor"/></svg><span>처음으로</span></button></div>
+    <div class="mission"></div><div class="hintline"></div>
+    <div class="tabbar"><button class="arr" id="tabL">‹</button><div class="tabs" id="tabs"></div><button class="arr" id="tabR">›</button></div>
+    <div class="grid" id="grid"></div>
+    <div class="cart">
+      <div class="cartList" id="cartList"></div>
+      <div class="cartSide">
+        <div class="sum">총 <span id="cartCount">0</span>개<b id="cartSum">0원</b></div>
+        <button class="clearBtn" id="clearBtn">전체 삭제</button>
+        <button class="payBtn" id="payBtn" disabled>결제하기</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="screen" id="s-point">
+    <div class="top"><div class="logo"><span class="dot">☕</span>다정 커피</div><div class="sp"></div><div class="timer"></div><button class="homeBtn" data-home aria-label="처음으로"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.2 12 3.5l9 7.7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.5 9.8V20h4.8v-5.6h3.4V20h4.8V9.8" fill="currentColor"/></svg><span>처음으로</span></button></div>
+    <div class="mission"></div><div class="hintline"></div>
+    <div class="center" style="gap:30px">
+      <div class="q" style="font-size:54px">포인트를 적립하시겠어요?<br><span style="font-size:34px;color:var(--muted);font-weight:600">전화번호를 누르면 쌓여요. 안 해도 괜찮아요.</span></div>
+      <div class="phone" id="phone">010-</div>
+      <div class="pad" id="pad"></div>
+      <div class="rowBtns">
+        <button class="mid no" id="skipPoint">적립 안 함</button>
+        <button class="mid yes" id="doPoint">적립하기</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="screen" id="s-method">
+    <div class="top"><div class="logo"><span class="dot">☕</span>다정 커피</div><div class="sp"></div><div class="timer"></div><button class="homeBtn" data-home aria-label="처음으로"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.2 12 3.5l9 7.7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.5 9.8V20h4.8v-5.6h3.4V20h4.8V9.8" fill="currentColor"/></svg><span>처음으로</span></button></div>
+    <div class="mission"></div><div class="hintline"></div>
+    <div class="center" style="gap:40px">
+      <div class="payTotal">결제할 금액 <b id="payTotal">0원</b></div>
+      <div class="q" style="font-size:54px">어떻게 결제하시겠어요?</div>
+      <div class="methods">
+        <button class="method" id="mCard"><svg viewBox="0 0 100 100"><rect x="8" y="22" width="84" height="56" rx="8" fill="#1a73e8"/><rect x="8" y="34" width="84" height="10" fill="#0b3d91"/><rect x="18" y="54" width="22" height="14" rx="3" fill="#f4c542"/></svg><div>신용·체크카드<small>카드를 꽂아서 결제</small></div></button>
+        <button class="method" id="mPhone"><svg viewBox="0 0 100 100"><rect x="28" y="6" width="44" height="88" rx="9" fill="#333"/><rect x="33" y="16" width="34" height="62" fill="#9fd3ff"/><circle cx="50" cy="86" r="4" fill="#888"/></svg><div>휴대폰 결제<small>바코드·QR을 비춰서 결제</small></div></button>
+        <button class="method" id="mBack" style="height:130px;font-size:42px;justify-content:center">← 메뉴로 돌아가기</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="screen" id="s-card">
+    <div class="top"><div class="logo"><span class="dot">☕</span>다정 커피</div><div class="sp"></div></div>
+    <div class="mission"></div><div class="hintline"></div>
+    <div class="center" style="gap:40px">
+      <div class="q" id="cardMsg">카드를 아래 투입구에<br>꽂아 주세요</div>
+      <div class="reader"><div class="card guide" id="cardImg"></div><div class="machine"><div class="slot"></div></div></div>
+      <div id="spin" class="spin" style="display:none"></div>
+      <button class="mid yes" id="cardAct">💳 카드 꽂기</button>
+      <button class="mid no" id="cardCancel">결제 취소</button>
+    </div>
+  </section>
+
+  <section class="screen" id="s-done">
+    <div class="top"><div class="logo"><span class="dot">☕</span>다정 커피</div><div class="sp"></div></div>
+    <div class="hintline"></div>
+    <div class="center" style="gap:30px;justify-content:flex-start;padding-top:40px">
+      <div class="q" style="font-size:56px">주문이 완료되었어요! 🎉</div>
+      <div class="result" id="result" style="display:none"></div>
+      <div class="receipt">
+        <div class="lab">주문 번호</div>
+        <div class="ono" id="orderNo">101</div>
+        <div class="lab" style="font-size:32px;color:var(--muted);margin-top:14px">화면과 진동벨에 번호가 나오면<br>카운터에서 받아 가세요</div>
+        <div class="chk" id="receiptList" style="text-align:left;font-size:28px"></div>
+      </div>
+      <button class="mid yes" id="doneHome" style="height:140px;font-size:50px;flex:none">처음으로</button>
+    </div>
+  </section>
+
+  <div class="modal" id="m-opt"><div class="box" id="optBox">
+    <h2 id="optName">아메리카노</h2>
+    <div class="optHead"><span id="optIcon"></span><span class="pp" id="optPrice">2,000원</span></div>
+    <div id="optGroups"></div>
+    <div class="og"><div class="ot">수량</div><div class="qty">
+      <button class="qbtn" id="optMinus">−</button><span class="qn" id="optQty">1</span><button class="qbtn" id="optPlus">+</button></div></div>
+    <div class="foot"><button class="no" id="optCancel">취소</button><button class="yes" id="optAdd">담기</button></div>
+  </div></div>
+
+  <div class="modal" id="m-confirm"><div class="box">
+    <h2>주문하신 내용이 맞나요?</h2>
+    <div class="chk" id="confirmList"></div>
+    <div class="foot"><button class="no" id="confNo">다시 고를게요</button><button class="yes" id="confYes">맞아요, 결제</button></div>
+  </div></div>
+
+  <div class="modal" id="m-alert"><div class="box">
+    <div class="msg" id="alertMsg"></div>
+    <div class="foot"><button class="yes" id="alertOk">확인</button></div>
+  </div></div>
+
+  <div class="modal" id="m-mission"><div class="box">
+    <h2>📝 연습 문제 고르기</h2>
+    <div class="list" id="missionList"></div>
+    <div class="foot"><button class="no" id="missionClose">닫기</button></div>
+  </div></div>
+
+  <div class="modal" id="m-set"><div class="box">
+    <h2>⚙ 설정 (선생님용)</h2>
+    <div class="set">도움 반짝이 <div class="seg" data-set="hint"><button data-v="on">켜기</button><button data-v="off">끄기</button></div></div>
+    <div class="set">시간 제한 <div class="seg" data-set="time"><button data-v="0">없음</button><button data-v="60">60초</button><button data-v="120">120초</button></div></div>
+    <div class="set">버튼 소리 <div class="seg" data-set="sound"><button data-v="on">켜기</button><button data-v="off">끄기</button></div></div>
+    <p style="font-size:28px;color:var(--muted);line-height:1.5">도움 반짝이를 켜면 다음에 누를 버튼이 주황색으로 반짝이고, 위에 안내 글이 나옵니다.<br>시간 제한을 켜면 진짜 키오스크처럼 아무것도 누르지 않을 때 시간이 줄고, 0초가 되면 처음 화면으로 돌아갑니다.</p>
+    <div class="foot"><button class="yes" id="setClose">닫기</button></div>
+  </div></div>
+
+</div>
+
+<script>
+/* =====================================================================
+   ★ 선생님이 고치는 곳 ★
+   메뉴 한 줄 = [메뉴 이름, 가격, 온도, 옵션 묶음, 표시]
+   - 온도: 'HI' 따뜻·차갑 둘 다 / 'H' 따뜻한 것만 / 'I' 차가운 것만 / '' 온도 없음(디저트)
+   - 옵션 묶음: 아래 OPTSET 이름 (아메리카노, 라떼, 음료, 에이드, 프라페, 차, 빵, 없음 ...)
+   - 표시: 'BEST', 'NEW' 또는 ''
+   ===================================================================== */
+const MENU = {
+  '시그니처': [
+    ['흑당 밀크티 라떼', 3900, 'HI', '달콤라떼', 'BEST'],
+    ['달고나 라떼',     4200, 'HI', '커피라떼', 'NEW'],
+    ['크림 카라멜 라떼', 4300, 'HI', '커피라떼', ''],
+    ['아인슈페너',      3800, 'HI', '커피라떼', 'BEST'],
+    ['쑥 라떼',         3900, 'HI', '달콤라떼', 'NEW'],
+    ['흑임자 라떼',     3900, 'HI', '달콤라떼', ''],
+    ['티라미수 라떼',   4300, 'I',  '커피라떼', ''],
+    ['미숫가루 라떼',   3800, 'I',  '달콤라떼', ''],
+  ],
+  '커피': [
+    ['아메리카노',       2000, 'HI', '아메리카노', 'BEST'],
+    ['꿀 아메리카노',    2700, 'HI', '아메리카노', ''],
+    ['헤이즐넛 아메리카노', 2700, 'HI', '아메리카노', ''],
+    ['카페라떼',         2900, 'HI', '커피라떼', 'BEST'],
+    ['딥라떼',           3500, 'HI', '커피라떼', 'NEW'],
+    ['카푸치노',         2900, 'HI', '커피라떼', ''],
+    ['바닐라라떼',       3400, 'HI', '커피라떼', ''],
+    ['카라멜 마끼아또',  3700, 'HI', '커피라떼', ''],
+    ['카페모카',         3700, 'HI', '커피라떼', ''],
+    ['연유라떼',         3600, 'HI', '커피라떼', ''],
+    ['콜드브루',         3300, 'I',  '아메리카노', ''],
+    ['에스프레소',       1500, 'H',  '에스프레소', ''],
+  ],
+  '디카페인': [
+    ['디카페인 아메리카노', 2500, 'HI', '아메리카노', 'BEST'],
+    ['디카페인 카페라떼',   3400, 'HI', '커피라떼', ''],
+    ['디카페인 딥라떼',     4000, 'HI', '커피라떼', ''],
+    ['디카페인 바닐라라떼', 3900, 'HI', '커피라떼', ''],
+    ['디카페인 카푸치노',   3400, 'HI', '커피라떼', ''],
+    ['디카페인 연유라떼',   4100, 'HI', '커피라떼', ''],
+    ['디카페인 콜드브루',   3800, 'I',  '아메리카노', ''],
+  ],
+  '베버리지': [
+    ['초코라떼',       3500, 'HI', '달콤라떼', 'BEST'],
+    ['녹차라떼',       3500, 'HI', '달콤라떼', ''],
+    ['고구마라떼',     3500, 'HI', '달콤라떼', ''],
+    ['곡물라떼',       3300, 'HI', '달콤라떼', ''],
+    ['딸기라떼',       3800, 'I',  '달콤라떼', 'NEW'],
+    ['레몬에이드',     3500, 'I',  '에이드', ''],
+    ['자몽에이드',     3500, 'I',  '에이드', ''],
+    ['청포도에이드',   3500, 'I',  '에이드', ''],
+    ['복숭아 아이스티', 3000, 'I', '에이드', 'BEST'],
+    ['따뜻한 우유',    2500, 'H',  '음료', ''],
+  ],
+  '프라페': [
+    ['쿠키 프라페',       4500, 'I', '프라페', 'BEST'],
+    ['커피 프라페',       4300, 'I', '프라페', ''],
+    ['민트초코 프라페',   4500, 'I', '프라페', ''],
+    ['녹차 프라페',       4500, 'I', '프라페', ''],
+    ['딸기 스무디',       4200, 'I', '프라페', 'BEST'],
+    ['망고 스무디',       4200, 'I', '프라페', ''],
+    ['플레인 요거트 스무디', 4200, 'I', '프라페', ''],
+    ['블루베리 요거트 스무디', 4300, 'I', '프라페', 'NEW'],
+  ],
+  '티': [
+    ['유자차',     3300, 'HI', '차', 'BEST'],
+    ['레몬차',     3300, 'HI', '차', ''],
+    ['자몽차',     3300, 'HI', '차', ''],
+    ['생강차',     3300, 'H',  '차', ''],
+    ['대추차',     3800, 'H',  '차', 'BEST'],
+    ['캐모마일',   2800, 'HI', '허브차', ''],
+    ['페퍼민트',   2800, 'HI', '허브차', ''],
+    ['얼그레이',   2800, 'HI', '허브차', ''],
+    ['녹차',       2800, 'HI', '허브차', ''],
+    ['보리차',     2000, 'HI', '허브차', ''],
+  ],
+  '디저트': [
+    ['초코 쿠키',      2000, '', '없음', ''],
+    ['치즈 케이크',    4500, '', '케이크', 'BEST'],
+    ['티라미수 케이크', 4800, '', '케이크', ''],
+    ['크로플',         3500, '', '빵', 'BEST'],
+    ['소금빵',         2800, '', '빵', ''],
+    ['크림치즈 베이글', 3500, '', '빵', ''],
+    ['마카롱',         2000, '', '없음', ''],
+    ['카스텔라',       3000, '', '없음', 'NEW'],
+  ],
+};
+
+/* 옵션 묶음: 메뉴마다 어떤 옵션 질문이 나올지 */
+const OPTSET = {
+  '아메리카노': ['temp','size','shot','syrup','ice','cup','carrier'],
+  '커피라떼':   ['temp','size','shot','milk','syrup','cream','ice','cup','carrier'],
+  '에스프레소': ['shot','cup'],
+  '달콤라떼':   ['temp','size','sweet','milk','cream','ice','cup','carrier'],
+  '음료':       ['temp','size','sweet','cup','carrier'],
+  '에이드':     ['size','sweet','ice','cup','carrier'],
+  '프라페':     ['size','sweet','whip','cup','carrier'],
+  '차':         ['temp','size','sweet','ice','cup','carrier'],
+  '허브차':     ['temp','size','ice','cup','carrier'],
+  '빵':         ['warm'],
+  '케이크':     ['fork'],
+  '없음':       [],
+};
+
+/* 옵션 질문과 고를 것: [값, 버튼 글자, 더하는 가격]  (첫 번째가 기본) */
+const OPT = {
+  temp:  {t:'따뜻하게? 차갑게?', c:[['HOT','🔥 따뜻하게',0],['ICE','🧊 차갑게',0]]},
+  size:  {t:'컵 크기', c:[['R','보통',0],['L','크게',500],['XL','아주 크게',1000]]},
+  shot:  {t:'커피 진하기 (샷)', c:[['0','그대로',0],['1','샷 1번 추가',500],['2','샷 2번 추가',1000],['-1','연하게',0]]},
+  milk:  {t:'우유 바꾸기', c:[['basic','일반 우유',0],['low','저지방 우유',0],['soy','두유',500],['oat','귀리(오트) 우유',500]]},
+  syrup: {t:'시럽 넣기', c:[['none','안 넣음',0],['vanilla','바닐라 시럽',300],['hazel','헤이즐넛 시럽',300],['caramel','카라멜 시럽',300]]},
+  sweet: {t:'단맛', c:[['normal','보통',0],['less','덜 달게',0],['more','더 달게',0]]},
+  cream: {t:'크림 올리기', c:[['none','안 올림',0],['whip','휘핑크림',500],['deep','크림 많이',800]]},
+  whip:  {t:'휘핑크림', c:[['basic','기본',0],['none','빼 주세요',0],['more','많이',500]]},
+  ice:   {t:'얼음 양', c:[['normal','보통',0],['less','적게',0],['more','많이',0]], when:o=>o.temp==='ICE'},
+  warm:  {t:'데워 드릴까요?', c:[['no','그대로',0],['yes','따뜻하게 데우기',0]]},
+  fork:  {t:'포크', c:[['1','1개',0],['2','2개',0],['0','필요 없음',0]]},
+  cup:   {t:'컵 고르기', c:[['store','매장 컵',0],['paper','일회용 컵',0],['tumbler','개인 텀블러',-300]],
+          only:()=>S.place==='here'?['store','tumbler']:['paper','tumbler']},
+  carrier:{t:'캐리어 (컵 들고 가는 받침)', c:[['no','필요 없음',0],['yes','필요해요',0]], when:()=>S.place==='togo'},
+};
+
+/* 연습 문제: o 안에 적은 옵션만 맞는지 확인합니다 */
+const MISSIONS = [
+  {lv:1, place:'here', items:[{n:'아메리카노', qty:1, o:{temp:'HOT'}}]},
+  {lv:1, place:'togo', items:[{n:'카페라떼', qty:2, o:{temp:'ICE'}}]},
+  {lv:2, place:'here', items:[{n:'대추차', qty:2, o:{}},{n:'치즈 케이크', qty:1, o:{fork:'2'}}]},
+  {lv:2, place:'togo', items:[{n:'딥라떼', qty:1, o:{temp:'ICE', shot:'1', ice:'less', carrier:'yes'}}]},
+  {lv:2, place:'here', items:[{n:'디카페인 바닐라라떼', qty:1, o:{temp:'HOT', milk:'soy', cup:'tumbler'}}]},
+  {lv:3, place:'togo', items:[{n:'쿠키 프라페', qty:1, o:{size:'L', whip:'none'}},{n:'크로플', qty:1, o:{warm:'yes'}}]},
+  {lv:3, place:'togo', items:[{n:'흑당 밀크티 라떼', qty:1, o:{temp:'ICE', sweet:'less'}},{n:'아메리카노', qty:2, o:{temp:'ICE', carrier:'yes'}}]},
+];
+/* ===================================================================== */
+
+const ORDER=['temp','size','shot','milk','syrup','sweet','cream','whip','ice','warm','fork','cup','carrier'];
+const COLORS={'아메리카노':'#3b2314','에스프레소':'#2a170c','커피라떼':'#b9875e','달콤라떼':'#c99a6a','음료':'#f4ede0','에이드':'#f3d34a','프라페':'#d9b07c','차':'#f2a91e','허브차':'#d8b45a'};
+const SPECIAL={'초코라떼':'#6b3a1f','녹차라떼':'#8db64a','고구마라떼':'#d39a55','딸기라떼':'#f08aa5','자몽에이드':'#f07b5a','청포도에이드':'#9ccc4a','복숭아 아이스티':'#e9a46b','민트초코 프라페':'#7fd1b9','녹차 프라페':'#8db64a','딸기 스무디':'#e8476b','망고 스무디':'#f6b23c','플레인 요거트 스무디':'#f4f1ea','블루베리 요거트 스무디':'#7a6fc4','쿠키 프라페':'#8a6a55','대추차':'#8a2f1d','녹차':'#7aa83a','보리차':'#b07a3c','쑥 라떼':'#8aa860','흑임자 라떼':'#5a5552','흑당 밀크티 라떼':'#a77650','따뜻한 우유':'#f7f2e8','카페모카':'#5b321c','미숫가루 라떼':'#cdb08a','페퍼민트':'#9ccf8a','얼그레이':'#a0603a','캐모마일':'#e6c35c'};
+const SHAPES={'초코 쿠키':'cookie','치즈 케이크':'cake','티라미수 케이크':'tira','크로플':'croffle','소금빵':'bread','크림치즈 베이글':'bagel','마카롱':'macaron','카스텔라':'castella'};
+
+const CATS=[];const ITEM={};let uid=0;
+Object.entries(MENU).forEach(([cat,rows])=>{const items=rows.map(r=>{const it={id:'m'+(uid++),name:r[0],price:r[1],temps:r[2]==='HI'?['HOT','ICE']:r[2]==='H'?['HOT']:r[2]==='I'?['ICE']:[],opts:OPTSET[r[3]]||[],set:r[3],badge:r[4]||'',cat,
+  color:SPECIAL[r[0]]||COLORS[r[3]]||'#b9875e',shape:SHAPES[r[0]]||(r[2]===''?'cookie':null),frappe:r[3]==='프라페'};ITEM[it.id]=it;return it});CATS.push({name:cat,items})});
+const byName=n=>Object.values(ITEM).find(i=>i.name===n);
+MISSIONS.forEach(m=>{m.items.forEach(w=>{w.it=byName(w.n);if(!w.it)console.warn('연습 문제 메뉴 없음:',w.n)});m.say=(m.place==='here'?'매장에서':'포장')+' · '+m.items.map(w=>wantText(w)+' '+w.qty+(w.it&&w.it.shape?'개':'잔')).join(' + ')});
+
+/* ---------- 상태 ---------- */
+const S={screen:'start',place:null,cat:CATS[0].name,cart:[],mission:null,hint:true,time:0,sound:true,left:0,orderNo:100+Math.floor(Math.random()*50),opt:null,phone:'',payStep:0,method:'card'};
+try{const sv=JSON.parse(localStorage.getItem('kioskSet')||'{}');if(sv.hint!=null)S.hint=sv.hint;if(sv.time!=null)S.time=sv.time;if(sv.sound!=null)S.sound=sv.sound}catch(e){}
+function saveSet(){try{localStorage.setItem('kioskSet',JSON.stringify({hint:S.hint,time:S.time,sound:S.sound}))}catch(e){}}
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const won=n=>n.toLocaleString('ko-KR')+'원';
+function jo(w,a,b){const c=w.charCodeAt(w.length-1);return w+((c>=0xAC00&&c<=0xD7A3&&(c-0xAC00)%28)?a:b)}
+
+/* ---------- 옵션 도우미 ---------- */
+function choices(g){const d=OPT[g];return d.only?d.c.filter(c=>d.only().includes(c[0])):d.c}
+function visible(g,o,it){if(g==='temp'&&it.temps.length<2)return false;const d=OPT[g];return !d.when||d.when(o)}
+function label(g,v){const c=OPT[g].c.find(c=>c[0]===v);return c?c[1].replace(/^[^\w가-힣]+\s*/,''):v}
+function defaults(it){const o={};it.opts.forEach(g=>o[g]=choices(g)[0][0]);o.temp=it.temps.length===1?it.temps[0]:null;return o}
+function unitPrice(it,o){let p=it.price;it.opts.forEach(g=>{if(!visible(g,o,it)&&g!=='temp')return;const c=OPT[g].c.find(c=>c[0]===o[g]);if(c)p+=c[2]});return p}
+function optText(it,o){const a=[];if(o.temp&&it.temps.length)a.push(o.temp==='HOT'?'따뜻하게':'차갑게');
+  it.opts.forEach(g=>{if(g==='temp'||!visible(g,o,it))return;const first=choices(g)[0][0];if(o[g]!==first||g==='cup'&&o[g]==='tumbler')a.push((g==='ice'?'얼음 ':g==='warm'?'':g==='fork'?'포크 ':'')+label(g,o[g]))});return a.join(' · ')}
+function wantText(w){const it=w.it||{name:w.n};const a=[];const o=w.o||{};
+  if(o.temp)a.push(o.temp==='HOT'?'따뜻한':'차가운');let s=a.join(' ')+(a.length?' ':'')+it.name;
+  const b=[];Object.keys(o).forEach(g=>{if(g==='temp')return;b.push((g==='ice'?'얼음 ':g==='carrier'?'캐리어 ':g==='fork'?'포크 ':g==='whip'?'휘핑 ':g==='cup'?'':'')+label(g,o[g]))});
+  return s+(b.length?'('+b.join(', ')+')':'')}
+
+/* ---------- 그림 ---------- */
+function icon(it,temp){
+  if(it.shape) return dessert(it.shape);
+  const t=temp||it.temps[0]||'HOT',c=it.color;
+  if(it.frappe) return `<svg viewBox="0 0 100 100"><line x1="54" y1="18" x2="64" y2="0" stroke="#d93025" stroke-width="5" stroke-linecap="round"/><path d="M28 30 q22 -26 44 0 Z" fill="#fff" stroke="#ddd" stroke-width="2"/><path d="M26 30 L74 30 L68 94 L32 94 Z" fill="${c}" stroke="#bbb" stroke-width="2"/><path d="M30 46 L70 46" stroke="#fff" stroke-width="3" opacity=".5"/></svg>`;
+  if(t==='ICE') return `<svg viewBox="0 0 100 100"><line x1="54" y1="24" x2="66" y2="2" stroke="#e8a317" stroke-width="5" stroke-linecap="round"/><ellipse cx="50" cy="24" rx="26" ry="6" fill="#d8eef9" stroke="#8fbfd6" stroke-width="2"/><path d="M25 26 L75 26 L68 94 L32 94 Z" fill="#eef8ff" stroke="#8fbfd6" stroke-width="2"/><path d="M28 44 L72 44 L68 94 L32 94 Z" fill="${c}" opacity=".9"/><rect x="34" y="48" width="13" height="13" rx="3" fill="#fff" opacity=".7"/><rect x="52" y="54" width="13" height="13" rx="3" fill="#fff" opacity=".6"/><rect x="40" y="66" width="12" height="12" rx="3" fill="#fff" opacity=".5"/></svg>`;
+  return `<svg viewBox="0 0 100 100"><path d="M40 16 q-5 -6 0 -12 M52 16 q-5 -6 0 -12 M64 16 q-5 -6 0 -12" fill="none" stroke="#bbb" stroke-width="3" stroke-linecap="round"/><rect x="22" y="22" width="56" height="11" rx="4" fill="#5b3a26"/><path d="M26 33 L74 33 L67 94 L33 94 Z" fill="#fff" stroke="#d5c7b5" stroke-width="2"/><path d="M29 50 L71 50 L69 70 L31 70 Z" fill="${c}" stroke="#d5c7b5"/><circle cx="50" cy="60" r="6" fill="#fff" opacity=".8"/></svg>`;
+}
+function dessert(s){
+  const m={
+   cookie:`<circle cx="50" cy="55" r="34" fill="#c98a4b"/><circle cx="38" cy="45" r="5" fill="#4a2a17"/><circle cx="60" cy="42" r="4" fill="#4a2a17"/><circle cx="55" cy="64" r="5" fill="#4a2a17"/><circle cx="36" cy="66" r="4" fill="#4a2a17"/><circle cx="68" cy="58" r="3.5" fill="#4a2a17"/>`,
+   cake:`<path d="M14 70 L86 70 L86 88 L14 88 Z" fill="#f7e3a1"/><path d="M14 70 L86 70 L86 52 Z" fill="#fff3cc"/><path d="M14 70 L86 52 L86 46 L14 64 Z" fill="#e8a317"/><circle cx="74" cy="44" r="6" fill="#d93025"/>`,
+   tira:`<path d="M14 70 L86 70 L86 88 L14 88 Z" fill="#7a4a2a"/><path d="M14 70 L86 70 L86 54 Z" fill="#f4e6cf"/><path d="M14 70 L86 54 L86 48 L14 64 Z" fill="#5b321c"/>`,
+   croffle:`<rect x="18" y="30" width="64" height="50" rx="16" fill="#d99a4e"/><path d="M34 30 V80 M50 30 V80 M66 30 V80 M18 46 H82 M18 63 H82" stroke="#a96a28" stroke-width="3"/><path d="M30 26 q20 -12 40 0" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round"/>`,
+   macaron:`<ellipse cx="50" cy="40" rx="32" ry="13" fill="#f39cb5"/><rect x="20" y="46" width="60" height="10" rx="5" fill="#fff4f7"/><ellipse cx="50" cy="64" rx="32" ry="13" fill="#f39cb5"/>`,
+   bread:`<ellipse cx="50" cy="60" rx="38" ry="22" fill="#e0a95c"/><path d="M26 52 q8 -10 16 0 M44 48 q8 -10 16 0 M62 52 q8 -10 16 0" fill="none" stroke="#b97a32" stroke-width="3"/><circle cx="40" cy="58" r="2" fill="#fff"/><circle cx="56" cy="62" r="2" fill="#fff"/><circle cx="66" cy="55" r="2" fill="#fff"/>`,
+   bagel:`<ellipse cx="50" cy="58" rx="36" ry="26" fill="#d8a05a"/><ellipse cx="50" cy="58" rx="10" ry="7" fill="#fff8ea"/><path d="M16 60 q34 10 68 0" stroke="#fff" stroke-width="6" fill="none"/>`,
+   castella:`<rect x="18" y="34" width="64" height="46" rx="6" fill="#ffd66b"/><rect x="18" y="30" width="64" height="12" rx="6" fill="#8a4b1d"/>`
+  };
+  return `<svg viewBox="0 0 100 100"><ellipse cx="50" cy="90" rx="40" ry="6" fill="#000" opacity=".08"/>${m[s]||m.cookie}</svg>`;
+}
+$('#startCups').innerHTML=icon(byName('아메리카노'),'HOT')+icon(byName('딸기 스무디'))+dessert('cake');
+$('#icHere').innerHTML=`<svg viewBox="0 0 100 100"><rect x="20" y="40" width="60" height="8" rx="3" fill="#8a5a3a"/><rect x="28" y="48" width="6" height="36" fill="#8a5a3a"/><rect x="66" y="48" width="6" height="36" fill="#8a5a3a"/><path d="M38 20 L62 20 L59 38 L41 38 Z" fill="#fff" stroke="#c9b9a3" stroke-width="2"/><rect x="36" y="16" width="28" height="6" rx="2" fill="#5b3a26"/></svg>`;
+$('#icTogo').innerHTML=`<svg viewBox="0 0 100 100"><path d="M22 34 L78 34 L72 90 L28 90 Z" fill="#c8915a"/><path d="M36 34 q0 -20 14 -20 q14 0 14 20" fill="none" stroke="#8a5a3a" stroke-width="5"/><rect x="40" y="52" width="20" height="20" rx="4" fill="#e8a317"/></svg>`;
+
+/* ---------- 소리 ---------- */
+let AC=null;
+function beep(f=880){if(!S.sound)return;try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();const o=AC.createOscillator(),g=AC.createGain();o.frequency.value=f;o.connect(g);g.connect(AC.destination);g.gain.setValueAtTime(.15,AC.currentTime);g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+.12);o.start();o.stop(AC.currentTime+.13)}catch(e){}}
+
+/* ---------- 화면 전환 ---------- */
+function go(id){S.screen=id;$$('.screen').forEach(e=>e.classList.toggle('on',e.id==='s-'+id));$$('.modal').forEach(m=>m.classList.remove('on'));resetTimer();render()}
+function openM(id){$('#m-'+id).classList.add('on');update()}
+function closeM(id){$('#m-'+id).classList.remove('on');update()}
+function alertBox(t,cb){$('#alertMsg').innerHTML=t;S.alertCb=cb||null;openM('alert')}
+$('#alertOk').onclick=()=>{closeM('alert');const cb=S.alertCb;S.alertCb=null;cb&&cb()};
+function home(){S.place=null;S.cart=[];S.cat=CATS[0].name;S.phone='';go('start')}
+$$('[data-home]').forEach(b=>b.onclick=()=>{if(S.cart.length)alertBox('처음으로 돌아가면<br>담은 메뉴가 <b>모두 지워져요.</b>',home);else home()});
+$('#startBtn').onclick=()=>go('place');
+$$('[data-place]').forEach(b=>b.onclick=()=>{S.place=b.dataset.place;go('menu')});
+
+/* ---------- 메뉴판 ---------- */
+function renderTabs(){$('#tabs').innerHTML=CATS.map(c=>`<button class="tab ${c.name===S.cat?'on':''}" data-cat="${c.name}">${c.name}</button>`).join('');
+  $$('#tabs .tab').forEach(t=>t.onclick=()=>{S.cat=t.dataset.cat;renderTabs();renderGrid();update()})}
+$('#tabL').onclick=()=>{$('#tabs').scrollLeft-=380};
+$('#tabR').onclick=()=>{$('#tabs').scrollLeft+=380};
+function renderGrid(){const c=CATS.find(c=>c.name===S.cat);
+  $('#grid').innerHTML=c.items.map(i=>`<button class="item" data-id="${i.id}"><div class="badges">${i.temps.includes('HOT')?'<span class="badge h">HOT</span>':''}${i.temps.includes('ICE')?'<span class="badge i">ICE</span>':''}</div>${i.badge?`<span class="ribbon ${i.badge==='NEW'?'new':''}">${i.badge}</span>`:''}${icon(i)}<div class="nm">${i.name}</div><div class="pr">${won(i.price)}</div></button>`).join('')+(c.items.length>6?'<div class="more">메뉴가 더 있으면 화면을 위로 밀어 보세요 ↕</div>':'');
+  $('#grid').scrollTop=0;
+  $$('#grid .item').forEach(b=>b.onclick=()=>openOpt(b.dataset.id))}
+
+/* ---------- 옵션 팝업 ---------- */
+function openOpt(id){const it=ITEM[id];S.opt={id,o:defaults(it),qty:1};$('#optName').textContent=it.name;renderOpt();openM('opt');$('#optBox').scrollTop=0}
+function renderOpt(){const it=ITEM[S.opt.id],o=S.opt.o;let n=0;
+  $('#optIcon').innerHTML=icon(it,o.temp);
+  $('#optPrice').textContent=won(unitPrice(it,o));
+  const groups=ORDER.filter(g=>it.opts.includes(g)&&visible(g,o,it));
+  $('#optGroups').innerHTML=groups.map(g=>`<div class="og" data-og="${g}"><div class="ot"><span class="num">${++n}</span>${OPT[g].t}</div><div class="ob">`+
+    choices(g).map((c,i)=>`<button class="opt ${g==='temp'?(c[0]==='HOT'?'hot':'ice'):''} ${o[g]===c[0]?'on':''}" data-g="${g}" data-v="${c[0]}">${c[1]}<small>${c[2]>0?'+'+won(c[2]):c[2]<0?'−'+won(-c[2])+' 할인':(i===0&&g!=='temp'?'기본':'&nbsp;')}</small></button>`).join('')+`</div></div>`).join('')
+    +(it.opts.length?'':'<p style="font-size:32px;text-align:center;color:#6f655d">고를 옵션이 없어요. 수량만 정하고 [담기]를 누르세요.</p>');
+  $$('#optGroups .opt').forEach(b=>b.onclick=()=>{o[b.dataset.g]=b.dataset.v;const st=$('#optBox').scrollTop;renderOpt();$('#optBox').scrollTop=st});
+  $('#optQty').textContent=S.opt.qty;update()}
+$('#optMinus').onclick=()=>{if(S.opt.qty>1){S.opt.qty--;renderOpt()}};
+$('#optPlus').onclick=()=>{if(S.opt.qty<9){S.opt.qty++;renderOpt()}};
+$('#optCancel').onclick=()=>closeM('opt');
+$('#optAdd').onclick=()=>{const it=ITEM[S.opt.id],o={...S.opt.o};
+  if(it.temps.length&&!o.temp){alertBox('<b>따뜻하게</b>인지 <b>차갑게</b>인지<br>먼저 골라 주세요.',()=>{$('#optBox').scrollTop=0});return}
+  it.opts.forEach(g=>{if(g!=='temp'&&!visible(g,o,it))delete o[g]});
+  const k=JSON.stringify(o),same=S.cart.find(c=>c.id===it.id&&JSON.stringify(c.o)===k);
+  if(same)same.qty+=S.opt.qty;else S.cart.push({id:it.id,o,qty:S.opt.qty,unit:unitPrice(it,o)});
+  closeM('opt');renderCart()};
+
+/* ---------- 장바구니 ---------- */
+const total=()=>S.cart.reduce((s,c)=>s+c.unit*c.qty,0), count=()=>S.cart.reduce((s,c)=>s+c.qty,0);
+function renderCart(){const L=$('#cartList');
+  if(!S.cart.length)L.innerHTML='<div class="cartEmpty">고른 메뉴가 여기에 나와요</div>';
+  else L.innerHTML=S.cart.map((c,i)=>{const it=ITEM[c.id];return `<div class="row"><div class="rn">${it.name}<small>${optText(it,c.o)||'&nbsp;'}</small></div><button class="qbtn" data-m="${i}">−</button><span class="qn">${c.qty}</span><button class="qbtn" data-p="${i}">+</button><span class="rp">${won(c.unit*c.qty)}</span><button class="del" data-d="${i}">✕</button></div>`}).join('');
+  L.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{const c=S.cart[b.dataset.m];if(c.qty>1)c.qty--;else S.cart.splice(b.dataset.m,1);renderCart()});
+  L.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{const c=S.cart[b.dataset.p];if(c.qty<9)c.qty++;renderCart()});
+  L.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{S.cart.splice(b.dataset.d,1);renderCart()});
+  $('#cartCount').textContent=count();$('#cartSum').textContent=won(total());$('#payBtn').disabled=!S.cart.length;
+  L.scrollTop=L.scrollHeight;update()}
+$('#clearBtn').onclick=()=>{if(S.cart.length)alertBox('담은 메뉴를 <b>모두 지울까요?</b>',()=>{S.cart=[];renderCart()})};
+function listHTML(){return S.cart.map(c=>{const it=ITEM[c.id],t=optText(it,c.o);return `<div><span>${it.name} × ${c.qty}${t?'<small>'+t+'</small>':''}</span><span>${won(c.unit*c.qty)}</span></div>`}).join('')+`<div class="tot"><span>합계</span><span>${won(total())}</span></div>`}
+$('#payBtn').onclick=()=>{$('#confirmList').innerHTML=`<div><span>${S.place==='here'?'🍽 매장에서':'🛍 포장하기'}</span><span></span></div>`+listHTML();openM('confirm')};
+$('#confNo').onclick=()=>closeM('confirm');
+$('#confYes').onclick=()=>{S.phone='';go('point')};
+
+/* ---------- 적립 ---------- */
+$('#pad').innerHTML=['1','2','3','4','5','6','7','8','9','지움','0','◀'].map(k=>`<button data-k="${k}" style="${k.length>1?'font-size:36px':''}">${k}</button>`).join('');
+$$('#pad button').forEach(b=>b.onclick=()=>{const k=b.dataset.k;if(k==='지움')S.phone='';else if(k==='◀')S.phone=S.phone.slice(0,-1);else if(S.phone.length<8)S.phone+=k;renderPhone()});
+function renderPhone(){const p=S.phone;$('#phone').textContent='010-'+p.slice(0,4)+(p.length>4?'-'+p.slice(4):'');update()}
+$('#skipPoint').onclick=()=>go('method');
+$('#doPoint').onclick=()=>{if(S.phone.length<8){alertBox('전화번호 8자리를<br>끝까지 눌러 주세요.<br><span style="font-size:32px;color:#6f655d">적립을 안 하려면 [적립 안 함]을 누르세요.</span>');return}
+  alertBox(`포인트가 <b>${Math.floor(total()/1000)}점</b> 쌓였어요! ⭐`,()=>go('method'))};
+
+/* ---------- 결제 ---------- */
+$('#mCard').onclick=()=>{S.method='card';S.payStep=0;go('card')};
+$('#mPhone').onclick=()=>{S.method='phone';S.payStep=0;go('card')};
+$('#mBack').onclick=()=>go('menu');
+$('#cardCancel').onclick=()=>{if(S.payStep===1)return;go('method')};
+$('#cardAct').onclick=()=>{const card=$('#cardImg');
+  if(S.payStep===0){S.payStep=1;card.classList.remove('guide');card.classList.add('in');
+    $('#cardMsg').innerHTML=S.method==='card'?'결제 중이에요<br><b style="color:#d93025">카드를 빼지 마세요!</b>':'결제 중이에요<br>잠시만 기다려 주세요';
+    $('#cardAct').style.display='none';$('#cardCancel').style.display='none';$('#spin').style.display='';
+    setTimeout(()=>{if(S.screen!=='card')return;$('#spin').style.display='none';beep(1200);
+      if(S.method==='card'){S.payStep=2;$('#cardMsg').innerHTML='결제가 끝났어요<br>카드를 빼 주세요';$('#cardAct').textContent='💳 카드 빼기';$('#cardAct').style.display=''}
+      else finish();update()},2200);
+  } else if(S.payStep===2){S.payStep=3;card.classList.remove('in');$('#cardAct').style.display='none';setTimeout(finish,700)}
+  update()};
+function renderCardScreen(){const card=$('#cardImg');card.className='card guide';$('#spin').style.display='none';$('#cardCancel').style.display='';$('#cardAct').style.display='';
+  if(S.method==='card'){card.style.background='';$('#cardMsg').innerHTML='카드를 아래 투입구에<br>꽂아 주세요';$('#cardAct').textContent='💳 카드 꽂기'}
+  else{card.style.background='linear-gradient(135deg,#333,#666)';$('#cardMsg').innerHTML='휴대폰 바코드를<br>아래 읽는 곳에 대 주세요';$('#cardAct').textContent='📱 휴대폰 대기'}}
+function finish(){S.orderNo++;$('#orderNo').textContent=S.orderNo;
+  $('#receiptList').innerHTML=`<div><span>${S.place==='here'?'매장':'포장'}</span><span></span></div>`+listHTML();
+  const r=$('#result');
+  if(S.mission){const res=check();r.style.display='';r.className='result '+(res.ok?'ok':'ng');
+    r.innerHTML=res.ok?'<h3>✅ 정답이에요! 잘하셨어요 👏</h3>연습 문제대로 정확하게 주문하셨어요.':'<h3>🔁 조금 달라요</h3>'+res.msgs.map(m=>'· '+m).join('<br>')+'<br><b>연습 문제:</b> '+S.mission.say}
+  else r.style.display='none';
+  go('done');beep(660);setTimeout(()=>beep(990),150)}
+$('#doneHome').onclick=home;
+
+/* ---------- 정답 확인 ---------- */
+function match(c,w){if(!w.it||c.id!==w.it.id)return false;return Object.entries(w.o||{}).every(([g,v])=>c.o[g]===v)}
+function check(){const m=S.mission,msgs=[];
+  if(S.place!==m.place)msgs.push(m.place==='here'?'[매장에서]를 골라야 해요.':'[포장하기]를 골라야 해요.');
+  m.items.forEach(w=>{const n=S.cart.filter(c=>match(c,w)).reduce((s,c)=>s+c.qty,0);
+    if(!n){if(S.cart.some(c=>c.id===w.it.id))msgs.push(w.it.name+': 옵션이 달라요. → '+wantText(w));else msgs.push(jo(w.it.name,'이','가')+' 빠졌어요.')}
+    else if(n!==w.qty)msgs.push(jo(w.it.name,'은','는')+' '+w.qty+'개여야 해요. (지금 '+n+'개)')});
+  S.cart.forEach(c=>{if(!m.items.some(w=>w.it&&w.it.id===c.id))msgs.push(jo(ITEM[c.id].name,'은','는')+' 연습 문제에 없어요.')});
+  return{ok:!msgs.length,msgs}}
+
+/* ---------- 연습 문제 / 설정 ---------- */
+function renderMissionList(){const lv=['','쉬움','보통','어려움'];
+  $('#missionList').innerHTML=`<button data-mi="-1" class="${!S.mission?'on':''}"><b>자유 주문</b><br><span style="font-size:30px;color:#6f655d">먹고 싶은 것을 마음대로 골라 보세요</span></button>`+MISSIONS.map((m,i)=>`<button data-mi="${i}" class="${S.mission===m?'on':''}"><b>문제 ${i+1}</b><span class="lv lv${m.lv}">${lv[m.lv]}</span><br><span style="font-size:31px">${m.say}</span></button>`).join('');
+  $$('#missionList button').forEach(b=>b.onclick=()=>{const i=+b.dataset.mi;S.mission=i<0?null:MISSIONS[i];closeM('mission');home()})}
+$('#missionOpen').onclick=()=>{renderMissionList();openM('mission')};
+$('#missionClose').onclick=()=>closeM('mission');
+function renderSet(){$$('.seg').forEach(g=>{const k=g.dataset.set,v=k==='time'?String(S.time):(S[k]?'on':'off');g.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===v))})}
+$$('.seg button').forEach(b=>b.onclick=()=>{const k=b.parentNode.dataset.set,v=b.dataset.v;if(k==='time')S.time=+v;else S[k]=v==='on';saveSet();renderSet();resetTimer();update()});
+$('#setOpen').onclick=()=>{renderSet();openM('set')};
+$('#setClose').onclick=()=>closeM('set');
+
+/* ---------- 시간 제한 ---------- */
+let tick=null;const TIMED=['place','menu','point','method'];
+function resetTimer(){S.left=S.time;clearInterval(tick);tick=null;
+  if(S.time&&TIMED.includes(S.screen)){tick=setInterval(()=>{S.left--;showTimer();
+    if(S.left<=0){clearInterval(tick);tick=null;alertBox('⏰ 시간이 지나서<br><b>처음 화면</b>으로 돌아가요.<br><span style="font-size:32px;color:#6f655d">진짜 키오스크도 오래 안 누르면 이렇게 돼요.<br>당황하지 말고 다시 하면 돼요!</span>',home)}},1000)}
+  showTimer()}
+function showTimer(){const on=S.time>0&&TIMED.includes(S.screen);$$('.timer').forEach(t=>{t.classList.toggle('on',on);t.classList.toggle('warn',S.left<=15);t.textContent='남은 시간 '+S.left+'초'})}
+document.addEventListener('pointerdown',e=>{if(e.target.closest('button'))beep();if(tick&&S.left>0){S.left=S.time;showTimer()}},true);
+
+/* ---------- 화면 그리기 + 도움 반짝이 ---------- */
+function render(){
+  if(S.screen==='menu'){$('#placeTag').textContent=S.place==='here'?'🍽 매장':'🛍 포장';renderTabs();renderGrid();renderCart()}
+  if(S.screen==='point')renderPhone();
+  if(S.screen==='method')$('#payTotal').textContent=won(total());
+  if(S.screen==='card')renderCardScreen();
+  const sm=$('#startMission');if(S.mission){sm.style.display='block';sm.innerHTML='📝 연습 문제<br>'+S.mission.say}else sm.style.display='none';
+  $$('.mission').forEach(m=>{m.classList.toggle('on',!!S.mission);if(S.mission)m.innerHTML=`<span class="ml">연습 문제</span><span class="mt">${S.mission.say}</span>`});
+  update()}
+function need(){if(!S.mission)return null;
+  for(const w of S.mission.items){if(!w.it)continue;const g=S.cart.filter(c=>match(c,w)).reduce((s,c)=>s+c.qty,0);if(g<w.qty)return{...w,rest:w.qty-g}}return null}
+function reveal(el){const box=el.closest('.grid,.tabs,.box');if(!box)return;const k=box.getBoundingClientRect().height/box.offsetHeight||1;
+  const a=el.getBoundingClientRect(),b=box.getBoundingClientRect();
+  if(box.classList.contains('tabs')){if(a.left<b.left||a.right>b.right)box.scrollLeft+=((a.left+a.right)/2-(b.left+b.right)/2)/k;return}
+  const footH=box.classList.contains('box')?170*k:0;
+  if(a.top<b.top+10*k||a.bottom>b.bottom-footH)box.scrollTop+=((a.top+a.bottom)/2-(b.top+b.bottom)/2)/k}
+let lastHint='';
+function update(){
+  $$('.hint').forEach(e=>e.classList.remove('hint'));
+  let el=[],txt='';const open=$$('.modal.on').map(m=>m.id);
+  if(open.includes('m-alert'))el=['#alertOk'];
+  else if(open.includes('m-opt')){const it=ITEM[S.opt.id],o=S.opt.o,n=need();const w=n&&n.it.id===it.id?n:null;
+    if(n&&!w){el=['#optCancel'];txt='다른 메뉴를 골랐어요. [취소]를 누르고 ['+n.it.name+']를 찾아요'}
+    else{let g0=null;
+      if(it.temps.length>1&&!o.temp)g0=['temp',w&&w.o.temp];
+      else if(w)for(const g of ORDER){if(w.o[g]!=null&&visible(g,o,it)&&o[g]!==w.o[g]){g0=[g,w.o[g]];break}}
+      if(g0){el=[g0[1]?`#optGroups [data-g="${g0[0]}"][data-v="${g0[1]}"]`:`#optGroups [data-g="${g0[0]}"]`];txt=OPT[g0[0]].t+' → '+(g0[1]?'['+label(g0[0],g0[1])+']를 눌러요':'하나를 골라요')}
+      else if(w&&S.opt.qty<w.rest){el=['#optPlus'];txt='[+]를 눌러 수량을 '+w.rest+'개로 맞춰요'}
+      else if(w&&S.opt.qty>w.rest){el=['#optMinus'];txt='[−]를 눌러 수량을 '+w.rest+'개로 맞춰요'}
+      else{el=['#optAdd'];txt=S.mission?'옵션을 다 골랐어요. [담기]를 눌러요':'옵션을 고르고 [담기]를 누르면 장바구니에 들어가요'}}}
+  else if(open.includes('m-confirm')){el=['#confYes'];txt='맞으면 [맞아요, 결제]를 눌러요'}
+  else if(open.length){}
+  else switch(S.screen){
+    case'start':el=['#startBtn'];break;
+    case'place':el=S.mission?[S.mission.place==='here'?'#placeHere':'#placeTogo']:['#placeHere','#placeTogo'];txt=S.mission?(S.mission.place==='here'?'[매장에서]를 눌러요':'[포장하기]를 눌러요'):'여기서 드실지, 가지고 가실지 골라요';break;
+    case'menu':{const n=need();
+      if(n){const it=n.it;if(S.cat!==it.cat){el=[`#tabs [data-cat="${it.cat}"]`];txt='위쪽 ['+it.cat+'] 칸을 눌러요'+(CATS.findIndex(c=>c.name===it.cat)>3?' (안 보이면 › 를 눌러 옆으로 넘겨요)':'')}
+        else{el=[`#grid [data-id="${it.id}"]`];txt='['+it.name+'] 그림을 눌러요'}}
+      else if(S.cart.length){el=['#payBtn'];txt=S.mission?'다 담았어요! 맞는지 보고 [결제하기]를 눌러요':'다 고르셨으면 [결제하기]를 눌러요'}
+      else{el=['#tabs .tab.on'];txt='위쪽 칸을 눌러 메뉴 종류를 골라요'}
+      break}
+    case'point':el=['#skipPoint'];txt='적립을 안 하려면 [적립 안 함]을 눌러요';break;
+    case'method':el=['#mCard'];txt='[신용·체크카드]를 눌러요';break;
+    case'card':el=S.payStep%2===1?[]:['#cardAct'];txt=S.payStep===3?'':S.payStep===1?'잠시 기다려요. 카드를 빼지 마세요':S.payStep===2?'이제 카드를 빼요':(S.method==='card'?'카드를 꽂아요 (연습 버튼을 눌러요)':'휴대폰을 대요 (연습 버튼을 눌러요)');break;
+    case'done':el=['#doneHome'];txt='주문 번호를 기억하고, 번호가 나오면 받으러 가요';break;
+  }
+  if(S.hint){const key=el.join(',');el.forEach(s=>$$(s).forEach(e=>e.classList.add('hint')));
+    if(key!==lastHint&&el.length===1){const e=$(el[0]);if(e)requestAnimationFrame(()=>reveal(e))}lastHint=key}
+  $$('.screen.on .hintline').forEach(h=>{h.classList.toggle('on',S.hint&&!!txt);h.textContent='👉 '+txt});
+}
+
+/* ---------- 화면 크기 맞추기 (TV·컴퓨터·휴대폰) ---------- */
+function fit(){const st=$('#stage'),W=innerWidth,H=innerHeight,m=W/H<0.75;document.body.classList.toggle('m',m);
+  let w,h,k;if(m){w=720;k=W/720;h=Math.round(H/k)}else{w=1080;h=1500;k=Math.min(W/1110,H/1530)}
+  st.style.width=w+'px';st.style.height=h+'px';
+  st.style.transform=`translate(${(W-w*k)/2}px,${(H-h*k)/2}px) scale(${k})`}
+addEventListener('resize',fit);fit();render();
+</script>
+</body>
+</html>
