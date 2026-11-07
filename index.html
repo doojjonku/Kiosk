@@ -103,6 +103,11 @@ button{font-family:inherit;cursor:pointer;border:none;color:inherit}
 .modal{position:absolute;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:20}
 .modal.on{display:flex}
 .box{width:940px;max-height:1420px;overflow-y:auto;background:#fff;border-radius:34px;padding:34px 38px 0;position:relative}
+.optMission{position:sticky;top:-34px;margin:-34px -38px 16px;padding:14px 38px;background:#fff1c7;border-bottom:3px solid var(--brand);font-size:30px;font-weight:700;line-height:1.35;z-index:4;display:none}
+.optMission.on{display:block}
+.optMission .ml{display:inline-block;background:var(--brown);color:#fff;font-size:22px;padding:4px 10px;border-radius:8px;margin-right:10px;vertical-align:middle}
+.optMission .oh{color:#0b4fb3;margin-top:8px;padding-top:8px;border-top:2px dashed #e8c76a}
+.optMission .oh:first-child{margin-top:0;padding-top:0;border-top:none}
 .box h2{font-size:50px;margin:0 0 8px;text-align:center}
 .box .pad0{height:34px}
 .optHead{display:flex;align-items:center;gap:24px;justify-content:center}
@@ -204,6 +209,7 @@ body.m .payBtn{height:104px;font-size:44px}
 body.m .row .rn{font-size:30px}
 body.m .row .rp{width:112px;font-size:27px}
 body.m .box{width:780px;padding:28px 26px 0}
+body.m .optMission{top:-28px;margin:-28px -26px 14px;padding:12px 26px;font-size:30px}
 body.m .ob{grid-template-columns:repeat(2,1fr)}
 body.m .opt{font-size:34px}
 body.m .bigCard{width:310px;height:440px;font-size:50px}
@@ -320,6 +326,7 @@ body.m .reader{transform:scale(.9)}
   </section>
 
   <div class="modal" id="m-opt"><div class="box" id="optBox">
+    <div class="optMission" id="optMission"></div>
     <h2 id="optName">아메리카노</h2>
     <div class="optHead"><span id="optIcon"></span><span class="pp" id="optPrice">2,000원</span></div>
     <div id="optGroups"></div>
@@ -688,7 +695,8 @@ function reveal(el){const box=el.closest('.grid,.tabs,.box');if(!box)return;cons
   const a=el.getBoundingClientRect(),b=box.getBoundingClientRect();
   if(box.classList.contains('tabs')){if(a.left<b.left||a.right>b.right)box.scrollLeft+=((a.left+a.right)/2-(b.left+b.right)/2)/k;return}
   const footH=box.classList.contains('box')?170*k:0;
-  if(a.top<b.top+10*k||a.bottom>b.bottom-footH)box.scrollTop+=((a.top+a.bottom)/2-(b.top+b.bottom)/2)/k}
+  const om=box.querySelector('.optMission.on'),headH=om?om.getBoundingClientRect().height:10*k;
+  if(a.top<b.top+headH||a.bottom>b.bottom-footH)box.scrollTop+=((a.top+a.bottom)/2-(b.top+headH+b.bottom-footH)/2)/k}
 let lastHint='';
 function update(){
   $$('.hint').forEach(e=>e.classList.remove('hint'));
@@ -721,6 +729,9 @@ function update(){
   }
   if(S.hint){const key=el.join(',');el.forEach(s=>$$(s).forEach(e=>e.classList.add('hint')));
     if(key!==lastHint&&el.length===1){const e=$(el[0]);if(e)requestAnimationFrame(()=>reveal(e))}lastHint=key}
+  {const om=$('#optMission'),showH=S.hint&&!!txt&&open.includes('m-opt');
+   om.innerHTML=(S.mission?'<div><span class="ml">연습 문제</span>'+S.mission.say+'</div>':'')+(showH?'<div class="oh">👉 '+txt+'</div>':'');
+   om.classList.toggle('on',!!S.mission||showH)}
   $$('.screen.on .hintline').forEach(h=>{h.classList.toggle('on',S.hint&&!!txt);h.textContent='👉 '+txt});
 }
 
